@@ -29,3 +29,7 @@ Green Ye via YouTube - https://ve42.co/Greenye
 Classic Micromouse, Excel 9a. Demonstrate fan suction, by TzongYong Khiew via YouTube - https://ve42.co/MMFanYT
 Vacuum Micromouse by Eliot, HACKADAY - https://ve42.co/MMVacuum
 ```
+
+- https://en.wikipedia.org/wiki/Flood_fill
+- https://www.geeksforgeeks.org/flood-fill-algorithm/
+
