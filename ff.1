@@ -1,0 +1,160 @@
+; https://en.wikipedia.org/wiki/Flood_fill
+; Walk-based filling (Fixed-memory method)
+
+///////////////////
+set cur to starting pixel
+set cur-dir to default direction
+clear mark and mark2 (set values to null)
+set backtrack and findloop to false
+
+while front-pixel is empty do
+    move forward
+end while
+
+jump to START
+
+MAIN LOOP:
+    move forward
+    if right-pixel is inside then
+        if backtrack is true and findloop is false and either front-pixel or left-pixel is inside then
+            set findloop to true
+        end if
+        turn right
+PAINT:
+        move forward
+    end if
+START:
+    set count to number of non-diagonally adjacent pixels filled (front/back/left/right ONLY)
+    if count is not 4 then
+        do
+            turn right
+        while front-pixel is inside
+        do
+            turn left
+        while front-pixel is not inside
+    end if
+    switch count
+        case 1
+            if backtrack is true then
+                set findloop to true
+            else if findloop is true then
+                if mark is null then
+                    restore mark
+                end if
+            else if front-left-pixel and back-left-pixel are both inside then
+                clear mark
+                set cur
+                jump to PAINT
+            end if
+        end case
+        case 2
+            if back-pixel is not inside then
+                if front-left-pixel is inside then
+                    clear mark
+                    set cur
+                    jump to PAINT
+                end if
+            else if mark is not set then
+                set mark to cur
+                set mark-dir to cur-dir
+                clear mark2
+                set findloop and backtrack to false
+            else
+                if mark2 is not set then
+                    if cur is at mark then
+                        if cur-dir is the same as mark-dir then
+                            clear mark
+                            turn around
+                            set cur
+                            jump to PAINT
+                        else
+                            set backtrack to true
+                            set findloop to false
+                            set cur-dir to mark-dir
+                        end if
+                    else if findloop is true then
+                        set mark2 to cur
+                        set mark2-dir to cur-dir
+                    end if
+                else
+                    if cur is at mark then
+                        set cur to mark2
+                        set cur-dir to mark2-dir
+                        clear mark and mark2
+                        set backtrack to false
+                        turn around
+                        set cur
+                        jump to PAINT
+                    else if cur at mark2 then
+                        set mark to cur
+                        set cur-dir and mark-dir to mark2-dir
+                        clear mark2
+                    end if
+                end if
+            end if
+        end case
+        case 3
+            clear mark
+            set cur
+            jump to PAINT
+        end case
+        case 4
+            set cur
+            done
+        end case
+    end switch
+end MAIN LOOP
+///////////////////
+
+
+1. `PUSH` and `POP` words have an issue with pointer incrementing and decrementing. It seems you want to store two values for each push, but you increment the stack pointer by one. This might cause overlapping in the values.
+2. In the `FIND-FRONT-PIXEL`, `FIND-RIGHT-PIXEL`, `FIND-BACK-PIXEL` and `FIND-LEFT-PIXEL` words, the coordinate calculations seem obscure. Since we don't know how the image is stored, it's hard to fix it exactly. However, typically images are represented in Forth as an array of width and height values followed by the pixel data. 
+3. Word `PAINT` is defined inside the `MAIN-LOOP` word. It should be defined outside.
+4. In the `COUNT` calculation, you're not adding the returned values from the `FIND` word calls, but replacing each time. Therefore, the `COUNT` value will be the result of the last call.
+5. There are also logical issues with the `CASE` structure inside `MAIN-LOOP`. It seems that some code sections are unfinished and not logically connected. 
+Without further information about the layout of the image data and the exact task the algorithm should accomplish, it's hard to give you a fully corrected code. 
+
+Here's a simplified general version of a flood-fill algorithm in Forth:
+
+```forth
+VARIABLE STACK  \ Coordinates stack
+VARIABLE SP     \ Stack pointer
+VARIABLE X      \ Current X coordinate
+VARIABLE Y      \ Current Y coordinate
+
+: PUSH ( x y -- )  \ Pushes coordinates onto the stack
+    SP @ 2* STACK + !  \ Store y
+    X @ SP @ 2* 1+ STACK + !  \ Store x
+    SP @ 1+ SP !
+;
+
+: POP ( -- x y )  \ Pops coordinates from the stack
+    SP @ 1- DUP SP !  \ Decrement stack pointer
+    2* STACK + @ Y !  \ Restore y
+    2* 1+ STACK + @ X !  \ Restore x
+;
+
+: FLOOD-FILL ( x y color -- )  \ The flood-fill algorithm
+    X !  Y !
+    BEGIN
+        X @ Y @ GET-COLOR
+        0=  \ If the current pixel is not colored
+        IF
+            X @ Y @ SET-COLOR  \ Color the pixel
+            X @ 1+ Y @ PUSH  \ Right
+            X @ 1- Y @ PUSH  \ Left
+            X @ Y @ 1+ PUSH  \ Down
+            X @ Y @ 1- PUSH  \ Up
+        THEN
+        SP @ 0>  \ If the stack is not empty
+    WHILE
+        POP  \ Restore the last coordinates from the stack
+    REPEAT
+;
+```
+
+In this simplified version, you need to provide your own `GET-COLOR` and `SET-COLOR` words that will interact with your image data. Also, this version is for a 4-way flood fill. If you need an 8-way flood fill, you should add pushes for diagonal directions as well.
+
+This version of the flood-fill algorithm doesn't handle image boundaries. In a practical implementation, you would have to add boundary checks to avoid accessing pixels outside the image.
+
+///////////////////////////
